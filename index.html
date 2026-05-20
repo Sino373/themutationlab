@@ -1,4 +1,4 @@
-<!DOCTYPE html> note from developer: DONT PLAY NUPI GAMES'S GAMES! instead go to https://docs.google.com/document/d/18lElkLHoEbGACtKGSBEk0kW7AsYTG5_TmLHmjt9o7tU/edit?usp=sharing for more games
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -476,6 +476,39 @@ header.bar::after {
 }
 @media (max-width: 760px) {
   .event-banner { left: 8px; max-width: 130px; padding: 6px 8px; }
+}
+
+/* ====================== ANOMALY (endgame breach UI) ====================== */
+.anomaly-banner {
+  position: absolute; top: 50%; right: 16px;
+  transform: translateY(-50%);
+  background: rgba(28, 6, 8, 0.92);
+  border: 2px solid var(--blood);
+  padding: 8px 12px;
+  font-size: 10px; letter-spacing: 2px;
+  z-index: 8;
+  max-width: 180px;
+  animation: anomalyPulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 24px rgba(255,85,119,0.45);
+}
+@keyframes anomalyPulse {
+  0%,100% { box-shadow: 0 0 16px rgba(255,85,119,0.4); border-color: var(--blood); }
+  50%     { box-shadow: 0 0 32px rgba(255,85,119,0.85); border-color: #ff99aa; }
+}
+.anomaly-banner .an-tag {
+  display: block; color: var(--blood); font-weight: 700; font-size: 11px;
+  text-shadow: 0 0 6px rgba(255,85,119,0.6);
+  margin-bottom: 4px; letter-spacing: 3px;
+}
+.anomaly-banner .an-text { display:block; color: var(--bone); font-size: 10px; }
+.anomaly-banner .an-count {
+  display:block; color: var(--blood); font-size: 18px;
+  font-weight: 800; margin-top: 6px;
+  text-shadow: 0 0 8px var(--blood);
+}
+@media (max-width: 760px) {
+  .anomaly-banner { right: 8px; max-width: 140px; padding: 6px 8px; }
+  .anomaly-banner .an-count { font-size: 15px; }
 }
 
 /* ====================== ACHIEVEMENTS ====================== */
@@ -1431,6 +1464,7 @@ footer.bar {
     </div>
 
     <div id="event-banner-host"></div>
+    <div id="anomaly-banner-host"></div>
 
     <div class="stage-progress">
       <div class="lbl"><span id="stage-progress-cur">0</span><span id="stage-progress-need">-> 1.00K</span></div>
@@ -1771,83 +1805,85 @@ function fmtMult(n) {
 
 // ---------- CONTENT DATABASE ----------
 // MUTATIONS: active upgrades that boost per-click damage.
+// Click damage values cut roughly in half across the board to slow active progress.
+// Cost growth steepened across the board so each level "stings" more.
 const MUTATIONS = [
   { id:'teeth',     name:'Sharper Teeth',     icon:'#', desc:'Crude incisors. The basics.',
-    base:15,       grow:1.18, power:1,        max:50 },
+    base:15,       grow:1.22, power:1,        max:50 },
   { id:'claws',     name:'Razor Claws',       icon:'V', desc:'Tear into the substrate.',
-    base:120,      grow:1.20, power:6,        max:50 },
+    base:120,      grow:1.24, power:3,        max:50 },
   { id:'acid',      name:'Acid Glands',       icon:'@', desc:'Dissolve before consuming.',
-    base:1200,     grow:1.22, power:35,       max:50 },
+    base:1200,     grow:1.26, power:18,       max:50 },
   { id:'spike',     name:'Bone Spikes',       icon:'*', desc:'Extruded calcium daggers.',
-    base:13000,    grow:1.22, power:180,      max:50 },
+    base:13000,    grow:1.28, power:90,       max:50 },
   { id:'tendril',   name:'Whip Tendrils',     icon:'~', desc:'Reach across the room.',
-    base:140000,   grow:1.24, power:900,      max:40 },
+    base:140000,   grow:1.30, power:450,      max:40 },
   { id:'psy',       name:'Psychic Lash',      icon:'%', desc:'Crush minds, then matter.',
-    base:1.6e6,    grow:1.25, power:4800,     max:40 },
+    base:1.6e6,    grow:1.32, power:2400,     max:40 },
   { id:'plasma',    name:'Plasma Veins',      icon:'=', desc:'Liquid sun beneath the skin.',
-    base:2e7,      grow:1.26, power:27000,    max:40 },
+    base:2e7,      grow:1.34, power:13500,    max:40 },
   { id:'anti',      name:'Antimatter Heart',  icon:'O', desc:'A core that should not be.',
-    base:2.4e8,    grow:1.28, power:160000,   max:30 },
+    base:2.4e8,    grow:1.36, power:80000,    max:30 },
   { id:'singularity', name:'Singularity Core', icon:'X', desc:'Gravity bends to feed it.',
-    base:3.2e9,    grow:1.30, power:920000,   max:25 },
+    base:3.2e9,    grow:1.38, power:460000,   max:25 },
   { id:'apoc',      name:'Apocalypse Form',   icon:'!', desc:'Final mutation. Final form?',
-    base:5.5e10,   grow:1.33, power:5.6e6,    max:20 },
+    base:5.5e10,   grow:1.42, power:2.8e6,    max:20 },
 ];
 
 // UPGRADES: passive biomass per second.
 const UPGRADES = [
   { id:'petri',    name:'Petri Dish',         icon:'o', desc:'Static culture. Watches.',
-    base:25,       grow:1.15, rate:0.5,   max:100 },
+    base:25,       grow:1.20, rate:0.5,   max:100 },
   { id:'reactor',  name:'Bio Reactor',        icon:'R', desc:'Bubbling vat of want.',
-    base:300,      grow:1.15, rate:5,     max:100 },
+    base:300,      grow:1.20, rate:5,     max:100 },
   { id:'splicer',  name:'Gene Splicer',       icon:'S', desc:'Snips and weaves.',
-    base:3.4e3,    grow:1.16, rate:45,    max:100 },
+    base:3.4e3,    grow:1.22, rate:45,    max:100 },
   { id:'hatch',    name:'Hatchery',           icon:'^', desc:'Birthing chamber, lit dim.',
-    base:48000,    grow:1.17, rate:280,   max:100 },
+    base:48000,    grow:1.23, rate:280,   max:100 },
   { id:'mutapool', name:'Mutagen Pool',       icon:'M', desc:'Swim. Become.',
-    base:6.4e5,    grow:1.18, rate:1700,  max:100 },
+    base:6.4e5,    grow:1.24, rate:1700,  max:100 },
   { id:'forge',    name:'DNA Forge',          icon:'F', desc:'Hammer on the helix.',
-    base:8.5e6,    grow:1.19, rate:11000, max:80 },
+    base:8.5e6,    grow:1.25, rate:11000, max:80 },
   { id:'qlab',     name:'Quantum Lab',        icon:'Q', desc:'Both alive and not.',
-    base:1.2e8,    grow:1.20, rate:75000, max:80 },
+    base:1.2e8,    grow:1.26, rate:75000, max:80 },
   { id:'womb',     name:'Cosmic Womb',        icon:'W', desc:'Spawn from a dying star.',
-    base:1.8e9,    grow:1.22, rate:520000,max:60 },
+    base:1.8e9,    grow:1.28, rate:520000,max:60 },
   { id:'breach',   name:'Reality Rift',       icon:'B', desc:'Pull biomass from elsewhere.',
-    base:2.8e10,   grow:1.24, rate:3.6e6, max:50 },
+    base:2.8e10,   grow:1.30, rate:3.6e6, max:50 },
   { id:'void',     name:'Void Genesis',       icon:'V', desc:'It makes itself now.',
-    base:4.4e11,   grow:1.26, rate:2.5e7, max:40 },
+    base:4.4e11,   grow:1.32, rate:2.5e7, max:40 },
 ];
 
 // EVOLUTION STAGES: thresholds determine the visual form.
-// NEW: each stage now grants concrete gameplay bonuses.
+// Each stage grants concrete gameplay bonuses. Thresholds bumped significantly
+// and click multipliers reduced — clicking should support but not dominate.
 //   clickMult   - multiplies all click damage
 //   passiveMult - multiplies all /sec production
-//   critChance  - chance of a critical click (was 0.05 hardcoded)
-//   critMult    - total damage multiplier on a crit (was 5 hardcoded)
+//   critChance  - chance of a critical click
+//   critMult    - total damage multiplier on a crit
 //   costMult    - flat cost reduction on every upgrade (1.0 = no change)
 const STAGES = [
   { name:'cell',     threshold: 0,
-    clickMult: 1.0,  passiveMult: 1.0,  critChance: 0.05, critMult: 5,  costMult: 1.00,
+    clickMult: 1.0,  passiveMult: 1.0,  critChance: 0.05, critMult: 4,  costMult: 1.00,
     blurb: 'baseline. nothing extra. yet.' },
-  { name:'larva',    threshold: 1e3,
-    clickMult: 1.5,  passiveMult: 1.2,  critChance: 0.06, critMult: 5,  costMult: 1.00,
+  { name:'larva',    threshold: 1e4,
+    clickMult: 1.2,  passiveMult: 1.3,  critChance: 0.06, critMult: 4,  costMult: 1.00,
     blurb: 'wriggling. hungry. faster than a cell.' },
-  { name:'crawler',  threshold: 1e5,
-    clickMult: 2.0,  passiveMult: 1.5,  critChance: 0.08, critMult: 6,  costMult: 0.98,
+  { name:'crawler',  threshold: 1e6,
+    clickMult: 1.5,  passiveMult: 1.8,  critChance: 0.07, critMult: 5,  costMult: 0.98,
     blurb: 'limbs. eyes. opinions about prey.' },
-  { name:'beast',    threshold: 1e7,
-    clickMult: 3.0,  passiveMult: 2.0,  critChance: 0.10, critMult: 7,  costMult: 0.95,
+  { name:'beast',    threshold: 1e8,
+    clickMult: 2.0,  passiveMult: 2.5,  critChance: 0.08, critMult: 6,  costMult: 0.96,
     blurb: 'apex of the lab. doors no longer help.' },
-  { name:'titan',    threshold: 1e9,
-    clickMult: 5.0,  passiveMult: 3.0,  critChance: 0.12, critMult: 8,  costMult: 0.92,
+  { name:'titan',    threshold: 1e11,
+    clickMult: 3.0,  passiveMult: 4.0,  critChance: 0.10, critMult: 7,  costMult: 0.94,
     blurb: 'load-bearing flesh. visible from orbit.' },
-  { name:'eldritch', threshold: 1e12,
-    clickMult: 8.0,  passiveMult: 5.0,  critChance: 0.15, critMult: 10, costMult: 0.88,
+  { name:'eldritch', threshold: 1e15,
+    clickMult: 5.0,  passiveMult: 6.5,  critChance: 0.12, critMult: 8,  costMult: 0.91,
     blurb: 'understanding it costs sanity.' },
   // MYTHIC: 7th stage, only available after at least one rebirth.
-  // Without a rebirth, currentStage() caps at eldritch even if lifetime exceeds 1e15.
-  { name:'mythic',   threshold: 1e15, requiresRebirth: true,
-    clickMult: 14.0, passiveMult: 8.0, critChance: 0.18, critMult: 12, costMult: 0.84,
+  { name:'mythic',   threshold: 1e20, requiresRebirth: true,
+    clickMult: 9.0,  passiveMult: 11.0, critChance: 0.15, critMult: 10, costMult: 0.87,
     blurb: 'a god kept a journal. you are the last entry.' },
 ];
 
@@ -1899,92 +1935,92 @@ const PERKS = [
 // MUTATION CODEX: collectible flavor entries with permanent passive bonuses.
 // Each unlocks at a grandLifetime threshold OR a custom trigger. Discovery is
 // passive - you don't pursue them directly. Pure long-tail content for players
-// who finished everything else. Each entry gives +1% to either click or passive
-// (tiny per-entry, meaningful in aggregate - all 24 unlocked = +24% bundle).
+// who finished everything else. Bonuses halved from the original tuning so
+// full codex ~+12% click & +12% passive instead of trivially big.
 //
 // Use `grand` for grandLifetime thresholds, or `check(s)` for custom triggers.
 const CODEX_ENTRIES = [
   // --- early biomass milestones (discovery is gentle) ---
   { id:'c01', glyph:'~',  name:'First Pulse',
     flavor:'The substrate twitched. Logs said it was a calibration error. Logs lie.',
-    grand:50,       bonus:{clickMult:1.01} },
+    grand:50,       bonus:{clickMult:1.005} },
   { id:'c02', glyph:'+',  name:'Sample 002',
     flavor:'Tagged, refrigerated, escaped. We rebuilt it from memory.',
-    grand:500,      bonus:{passiveMult:1.01} },
+    grand:500,      bonus:{passiveMult:1.005} },
   { id:'c03', glyph:'#',  name:'Cellular Census',
     flavor:'Population: too many. The interns stopped counting on day three.',
-    grand:5000,     bonus:{clickMult:1.01} },
+    grand:5000,     bonus:{clickMult:1.005} },
   { id:'c04', glyph:'%',  name:'Mucus Protocol',
     flavor:'A new layer formed overnight. It hums when the lights are off.',
-    grand:50000,    bonus:{passiveMult:1.01} },
+    grand:50000,    bonus:{passiveMult:1.005} },
   { id:'c05', glyph:'@',  name:'Eye, Or Approximation',
     flavor:'It is watching us back now. The board has been informed.',
-    grand:500000,   bonus:{clickMult:1.01} },
+    grand:500000,   bonus:{clickMult:1.005} },
 
   // --- mid-game: bigger milestones, more flavor ---
   { id:'c06', glyph:'V',  name:'Dental Surplus',
     flavor:'We removed seventy-two teeth. Replaced overnight. Removed again. Repeat.',
-    grand:5e6,      bonus:{clickMult:1.02} },
+    grand:5e6,      bonus:{clickMult:1.01} },
   { id:'c07', glyph:'X',  name:'Containment Drill #4',
     flavor:'The drill went well. The containment did not. Nobody died, technically.',
-    grand:5e7,      bonus:{passiveMult:1.02} },
+    grand:5e7,      bonus:{passiveMult:1.01} },
   { id:'c08', glyph:'!',  name:'Dr. Halen\'s Notebook',
     flavor:'Pages 1-43 are research. Page 44 is just the word HUNGRY in different sizes.',
-    grand:5e8,      bonus:{clickMult:1.02} },
+    grand:5e8,      bonus:{clickMult:1.01} },
   { id:'c09', glyph:'O',  name:'The Second Heart',
     flavor:'Located ventrally. It beats out of sync. We are not allowed to listen to it.',
-    grand:5e9,      bonus:{passiveMult:1.02} },
+    grand:5e9,      bonus:{passiveMult:1.01} },
   { id:'c10', glyph:'?',  name:'Subject Smiles',
     flavor:'It has no mouth. The technicians say it smiles anyway. They have asked to be reassigned.',
-    grand:5e10,     bonus:{clickMult:1.02} },
+    grand:5e10,     bonus:{clickMult:1.01} },
 
   // --- late: rebirth-era ---
   { id:'c11', glyph:'B',  name:'Recursive Tissue',
     flavor:'Cut a sample. The sample grew a sample. Burn it all, the dean said.',
-    grand:5e11,     bonus:{passiveMult:1.03} },
+    grand:5e11,     bonus:{passiveMult:1.015} },
   { id:'c12', glyph:'W',  name:'Spectator Mode',
     flavor:'Subjects in adjacent labs report being watched. Subjects in OUR lab agree.',
-    grand:5e12,     bonus:{clickMult:1.03} },
+    grand:5e12,     bonus:{clickMult:1.015} },
   { id:'c13', glyph:'Q',  name:'Acausal Lunch',
     flavor:'Tuesday\'s feeding occurred Monday. The food was waiting. So was it.',
-    grand:5e13,     bonus:{passiveMult:1.03} },
+    grand:5e13,     bonus:{passiveMult:1.015} },
   { id:'c14', glyph:'S',  name:'Shed Skin, Vol. III',
     flavor:'Curated by the janitor, Frank. Frank has been promoted to Curator.',
-    grand:5e14,     bonus:{clickMult:1.03} },
+    grand:5e14,     bonus:{clickMult:1.015} },
   { id:'c15', glyph:'F',  name:'Apex Briefing',
     flavor:'GEN. KOVACS: "Magnificent. Weaponize it." DR. HALEN: "It already is."',
-    grand:1e15,     bonus:{passiveMult:1.03} },
+    grand:1e15,     bonus:{passiveMult:1.015} },
 
   // --- mythic-era: rare collectors-only ---
   { id:'c16', glyph:'M',  name:'The Crown Forms',
     flavor:'Twelve spikes. The seventh sings on a frequency we cannot record but can feel.',
-    grand:5e15,     bonus:{clickMult:1.04} },
+    grand:5e15,     bonus:{clickMult:1.02} },
   { id:'c17', glyph:'^',  name:'Liturgy of Mass',
     flavor:'The specimen developed a vocabulary. It is liturgical. It is in our voices.',
-    grand:5e16,     bonus:{passiveMult:1.04} },
+    grand:5e16,     bonus:{passiveMult:1.02} },
   { id:'c18', glyph:'*',  name:'Reverse Mitosis',
     flavor:'Two cells became one, larger, hungrier, and full of opinions about us.',
-    grand:5e17,     bonus:{clickMult:1.04} },
+    grand:5e17,     bonus:{clickMult:1.02} },
   { id:'c19', glyph:'=',  name:'Internal Sun',
     flavor:'It is warm even when refrigerated. Dr. Halen wears sunglasses to feedings.',
-    grand:5e18,     bonus:{passiveMult:1.04} },
+    grand:5e18,     bonus:{passiveMult:1.02} },
   { id:'c20', glyph:'O',  name:'Page 45',
     flavor:'A new page appeared in the notebook. Only the word LISTEN. Written in our hands.',
-    grand:5e19,     bonus:{clickMult:1.05} },
+    grand:5e19,     bonus:{clickMult:1.025} },
 
   // --- behavioral entries (custom triggers, not threshold-based) ---
   { id:'c21', glyph:'@',  name:'Mycological Notes',
     flavor:'Golden spores aren\'t random. They\'re samples sent BY the specimen. To us.',
     check: s => (s.sporesGrabbed || 0) >= 10,
-    bonus:{clickMult:1.03} },
+    bonus:{clickMult:1.015} },
   { id:'c22', glyph:'O',  name:'Recurrence',
     flavor:'Each rebirth, it remembers more. We hope it doesn\'t remember us specifically.',
     check: s => (s.totalRebirths || 0) >= 10,
-    bonus:{passiveMult:1.03} },
+    bonus:{passiveMult:1.015} },
   { id:'c23', glyph:'X',  name:'Critical Mass',
     flavor:'On the 5000th click the specimen blinked in unison with the operator.',
     check: s => (s.totalClicks || 0) >= 5000,
-    bonus:{clickMult:1.04} },
+    bonus:{clickMult:1.02} },
   { id:'c24', glyph:'!',  name:'Codex Sealed',
     flavor:'You have read everything the lab knows. Dr. Halen suggests you forget some of it.',
     // unlocks when all other entries are unlocked
@@ -1996,7 +2032,7 @@ const CODEX_ENTRIES = [
       }
       return n >= CODEX_ENTRIES.length - 1;
     },
-    bonus:{clickMult:1.10, passiveMult:1.10} },
+    bonus:{clickMult:1.05, passiveMult:1.05} },
 ];
 
 // ACHIEVEMENTS: permanent milestones with small but stacking bonuses.
@@ -2137,6 +2173,8 @@ const DEFAULT_STATE = () => ({
   adminUnlocked: false,                 // ADMINONLY toggles this on - other codes require it
   usedCodes:     {},                    // {CODE:true} for codes that have been spent (one-time use)
   codex:         {},                    // {id:true} for unlocked codex entries
+  anomalyClicksRemaining: 0,            // ANOMALY: clicks needed to suppress (0 = inactive)
+  anomalyNextRollAt: 0,                 // wall-time of next anomaly check
 });
 
 let state = DEFAULT_STATE();
@@ -2197,31 +2235,32 @@ function codexBundle() {
   return b;
 }
 
-// NEW: post-apex "Apex Tier" — once you hit Eldritch, every 10x of lifetime
-// past 1e12 grants +1 tier. Each tier multiplies click & passive by 1.5x and
-// adds +1% crit chance (capped at +20%). Keeps the endgame moving forever.
+// Post-apex "Apex Tier" - much harsher now. Each tier requires 100x lifetime
+// past Eldritch (1e15) and grants +30% click & passive instead of +50%.
+// Endgame number-go-up is still infinite, just earned more slowly.
 function apexTier() {
-  if (state.lifetime < 1e12) return 0;
-  return Math.floor(Math.log10(state.lifetime / 1e12));
+  if (state.lifetime < 1e15) return 0;
+  return Math.floor(Math.log10(state.lifetime / 1e15) / 2);
 }
 function apexBundle() {
   const t = apexTier();
   return {
     tier: t,
-    clickMult:   Math.pow(1.5, t),
-    passiveMult: Math.pow(1.5, t),
-    critBonus:   Math.min(0.20, t * 0.01),
+    clickMult:   Math.pow(1.3, t),
+    passiveMult: Math.pow(1.3, t),
+    critBonus:   Math.min(0.15, t * 0.008),
   };
 }
 
 function computeClickPower() {
   const bundle = perkBundle();
   const s = stageBundle();
-  let pwr = 1; // baseline
+  let pwr = 0.5; // baseline (was 1; clicking is supposed to support, not dominate)
   for (const m of MUTATIONS) {
     pwr += (state.mutations[m.id] || 0) * m.power;
   }
-  return pwr * bundle.clickMult * s.clickMult * apexBundle().clickMult * eventBundle().clickMult * achvBundle().clickMult * codexBundle().clickMult;
+  // Global 0.7x click nerf — applied after all multiplicative stacks.
+  return pwr * bundle.clickMult * s.clickMult * apexBundle().clickMult * eventBundle().clickMult * achvBundle().clickMult * codexBundle().clickMult * 0.7;
 }
 
 function computePassive() {
@@ -2238,7 +2277,9 @@ function costOf(def, owned) {
   if (state.godMode) return 0;
   const bundle = perkBundle();
   const s = stageBundle();
-  return Math.ceil(def.base * Math.pow(def.grow, owned) * bundle.costMult * s.costMult * eventBundle().costMult);
+  // ANOMALY: all costs spike 5x while a containment breach is active.
+  const anomalyMult = (state.anomalyClicksRemaining > 0) ? 5 : 1;
+  return Math.ceil(def.base * Math.pow(def.grow, owned) * bundle.costMult * s.costMult * eventBundle().costMult * anomalyMult);
 }
 
 function perkCost(p) {
@@ -2247,9 +2288,10 @@ function perkCost(p) {
 }
 
 function rpOnRebirth() {
-  // Square-root scaling on THIS-RUN lifetime keeps gains feeling earned.
-  // (Previously used grandLifetime — which never resets — and allowed infinite rebirths.)
-  const base = Math.floor(Math.sqrt(state.lifetime / 1e6));
+  // First rebirth gated to ~1B lifetime now. Higher exponent base = slower
+  // RP accumulation at very high lifetimes too, so rebirthing isn't a free
+  // exponential ladder. Was: sqrt(lifetime/1e6).
+  const base = Math.floor(Math.pow(state.lifetime / 1e9, 0.5));
   return Math.floor(base * perkBundle().fkMult);
 }
 
@@ -2581,12 +2623,12 @@ function renderStageBonuses(idx) {
     el.stageNextHint.innerHTML = '<span class="tag">NEXT // ' + STAGES[idx+1].name.toUpperCase() + ':</span>' + diff;
   } else {
     // Post-apex: show progress toward the next apex tier.
-    const nextThr = 1e12 * Math.pow(10, ap.tier + 1);
-    const prevThr = 1e12 * Math.pow(10, ap.tier);
+    const nextThr = 1e15 * Math.pow(100, ap.tier + 1);
+    const prevThr = 1e15 * Math.pow(100, ap.tier);
     const prog = Math.min(100, ((state.lifetime - prevThr) / (nextThr - prevThr)) * 100);
     el.stageNextHint.innerHTML =
       '<span class="tag">APEX T' + (ap.tier + 1) + ':</span>' +
-      '+50% CLK | +50% PSV | +1% CRIT @ ' + fmt(nextThr) + ' (' + prog.toFixed(1) + '%)';
+      '+30% CLK | +30% PSV | +0.8% CRIT @ ' + fmt(nextThr) + ' (' + prog.toFixed(1) + '%)';
   }
 }
 
@@ -2610,7 +2652,7 @@ function renderMonster(force=false) {
   if (curTier !== lastApexTier) {
     if (curTier > lastApexTier && lastApexTier >= 0) {
       triggerEvolutionFlash();
-      toast('APEX TIER ' + curTier + ' // +50% CLK | +50% PSV | +1% CRIT');
+      toast('APEX TIER ' + curTier + ' // +30% CLK | +30% PSV | +0.8% CRIT');
     }
     lastApexTier = curTier;
     renderStageBonuses(idx);
@@ -2756,6 +2798,21 @@ function refreshHeader() {
   const gain = rpOnRebirth();
   el.prestige.disabled = false;
   el.prestige.textContent = gain >= 1 ? ('// REBIRTH (+' + fmt(gain) + ' RP) //') : '// REBIRTH //';
+
+  // Anomaly banner - only present when active
+  const host = document.getElementById('anomaly-banner-host');
+  if (host) {
+    if (state.anomalyClicksRemaining > 0) {
+      host.innerHTML =
+        '<div class="anomaly-banner">' +
+          '<span class="an-tag">!! BREACH</span>' +
+          '<span class="an-text">click to suppress<br>costs x5 until contained</span>' +
+          '<span class="an-count">' + state.anomalyClicksRemaining + '</span>' +
+        '</div>';
+    } else if (host.innerHTML) {
+      host.innerHTML = '';
+    }
+  }
 }
 
 function refreshAll() {
@@ -2791,6 +2848,17 @@ function buyUpgrade(id) {
 
 // CLICK!
 function onMonsterClick(e) {
+  // ANOMALY: clicks during an anomaly count toward suppressing it.
+  if (state.anomalyClicksRemaining > 0) {
+    state.anomalyClicksRemaining--;
+    if (state.anomalyClicksRemaining <= 0) {
+      state.anomalyClicksRemaining = 0;
+      toast('// ANOMALY SUPPRESSED // costs restored //');
+      playSound('evolve');
+      // Reroll the next anomaly 4-8 minutes out
+      state.anomalyNextRollAt = Date.now() + (240 + Math.random() * 240) * 1000;
+    }
+  }
   // base click power (already includes stage/apex/event multipliers)
   const base = computeClickPower();
   // golden spore is the only click-only multiplier now
@@ -2820,7 +2888,7 @@ function onMonsterClick(e) {
   // power is already counted toward biomass; crit adds the rest.
   const pb = perkBundle();
   const critChance = s.critChance + apexBundle().critBonus + eventBundle().critBonus + pb.critBonus;
-  const critMult   = s.critMult + pb.critMultBonus;
+  const critMult   = s.critMult + pb.critMultBonus + eventBundle().critMultBonus;
   const isCrit = Math.random() < critChance;
   if (isCrit) {
     const bonus = power * (critMult - 1);
@@ -2980,6 +3048,32 @@ function tickEvent(now) {
   rollEvent(now);
 }
 
+// ---------- ANOMALY (endgame difficulty layer) ----------
+// At Mythic stage onward, the specimen periodically enters a containment-breach
+// state. While active, ALL upgrade costs are 5x. Players must CLICK the monster
+// a set number of times to suppress it — forcing active play through endgame.
+// Cooldown: 4-8 minutes between anomalies; scales harder per apex tier.
+function tickAnomaly() {
+  // Only Mythic-stage players (idx 6) get anomalies. Others see nothing.
+  if (state.stage < 6) return;
+  // Already active? Nothing to roll.
+  if (state.anomalyClicksRemaining > 0) return;
+  const nowMs = Date.now();
+  if (!state.anomalyNextRollAt) {
+    // First-time seed - schedule first anomaly 3-6 min out
+    state.anomalyNextRollAt = nowMs + (180 + Math.random() * 180) * 1000;
+    return;
+  }
+  if (nowMs < state.anomalyNextRollAt) return;
+  // Trigger anomaly. Required clicks scale with apex tier so it doesn't get
+  // trivial as the player gets stronger.
+  const t = apexTier();
+  const required = 50 + t * 20;
+  state.anomalyClicksRemaining = required;
+  toast('// ANOMALY // CONTAINMENT BREACH // CLICK x' + required + ' TO SUPPRESS // COSTS x5');
+  playSound('perk');
+}
+
 function renderEventBanner() {
   if (!activeEvent) return;
   const host = document.getElementById('event-banner-host');
@@ -2994,7 +3088,7 @@ function renderEventBanner() {
 
 // Compute combined event modifier bundle (used in click/passive/cost).
 function eventBundle() {
-  const b = { clickMult:1, passiveMult:1, costMult:1, critBonus:0 };
+  const b = { clickMult:1, passiveMult:1, costMult:1, critBonus:0, critMultBonus:0, sporeRate:1 };
   if (activeEvent) activeEvent.def.apply(b);
   return b;
 }
@@ -3016,6 +3110,7 @@ function loop(now) {
 
   tickSpore(now);
   tickEvent(now);
+  tickAnomaly();
   checkAchievements();
   checkCodex();
   tickBiomassDisplay(dt);
